@@ -1,3 +1,8 @@
+"""
+Author: Apoorva Vinod Gorur
+Email: apoorva.v94@gmail.com
+"""
+
 import cv2 as cv
 import argparse
 import sys
@@ -211,7 +216,7 @@ def main():
                              'Detect it automatically if it does not set.')
     parser.add_argument('--classes', help='Optional path to a text file with names of classes to label detected objects.')
     
-    parser.add_argument('--thr', type=float, default=0.5, help='Confidence threshold')
+    parser.add_argument('--thr', type=float, default=0.35, help='Confidence threshold')
     
     args = parser.parse_args()
 
