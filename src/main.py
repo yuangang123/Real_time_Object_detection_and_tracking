@@ -12,23 +12,23 @@ import imutils
 from object_detection import object_detector
 
 
+def drawPred(frame, bboxes, objects_detected):
 
-def drawPred(frame, classes, classId, conf, left, top, right, bottom):
-    # Draw a bounding box.
-    cv.rectangle(frame, (left, top), (right, bottom), (0, 255, 0))
+    objects_list = list(objects_detected.keys())
 
-    label = '%.2f' % conf
+    for i,box in enumerate(bboxes):
+        object_  = objects_list[i]
+        label = '%s: %.2f' % (object_, objects_detected.get(object_)[1])
+        p1 = (int(box[0]), int(box[1]))
+        p2 = (int(box[0] + box[2]), int(box[1] + box[3]))
+        cv.rectangle(frame, p1, p2, (0, 255, 0))
+        left = int(box[0])
+        top = int(box[1])
+        labelSize, baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        top = max(top, labelSize[1])
+        cv.rectangle(frame, (left, top - labelSize[1]), (left + labelSize[0], top + baseLine), (255, 255, 255), cv.FILLED)
+        cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
-    # Print a label of class.
-    if classes:
-        assert(classId < len(classes))
-        label = '%s: %s' % (classes[classId], label)
-    #print(label)
-
-    labelSize, baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-    top = max(top, labelSize[1])
-    cv.rectangle(frame, (left, top - labelSize[1]), (left + labelSize[0], top + baseLine), (255, 255, 255), cv.FILLED)
-    cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
 def postprocess(frame, out, threshold, classes, framework):
 
@@ -47,8 +47,9 @@ def postprocess(frame, out, threshold, classes, framework):
                 top = int(detection[4] * frameHeight)
                 right = int(detection[5] * frameWidth)
                 bottom = int(detection[6] * frameHeight)
-                classId = int(detection[1]) - 1  # Skip background label
-                drawPred(frame, classes, classId, confidence, int(left), int(top), int(right), int(bottom))
+                #classId = int(detection[1]) - 1  # Skip background label
+                
+                classId = int(detection[1])
                 i = 0
                 label = classes[classId]
                 label_with_num = str(label) + '_' + str(i)
@@ -57,8 +58,8 @@ def postprocess(frame, out, threshold, classes, framework):
                         break
                     label_with_num = str(label) + '_' + str(i)
                     i = i+1
-                objects_detected[label_with_num] = (int(left),int(top),int(right - left), int(bottom-top)) 
-                print(label_with_num + ' at co-ordinates '+ str(objects_detected[label_with_num]))
+                objects_detected[label_with_num] = ((int(left),int(top),int(right - left), int(bottom-top)),confidence) 
+                #print(label_with_num + ' at co-ordinates '+ str(objects_detected[label_with_num]))
 
     else:
         # Network produces output blob with a shape NxC where N is a number of
@@ -75,7 +76,7 @@ def postprocess(frame, out, threshold, classes, framework):
                 height = int(detection[3] * frameHeight)
                 left = center_x - (width / 2)
                 top = center_y - (height / 2)
-                drawPred(frame, classes, classId, confidence, int(left), int(top), int(left + width), int(top + height))
+                
                 i = 0
                 label = classes[classId]
                 label_with_num = str(label) + '_' + str(i)
@@ -84,42 +85,38 @@ def postprocess(frame, out, threshold, classes, framework):
                         break
                     label_with_num = str(label) + '_' + str(i)
                     i = i+1
-                objects_detected[label_with_num] = (int(left),int(top),int(width),int(height))  
-                print(label_with_num + ' at co-ordinates '+ str(objects_detected[label_with_num]))
+                objects_detected[label_with_num] = ((int(left),int(top),int(width),int(height)),confidence)  
+                #print(label_with_num + ' at co-ordinates '+ str(objects_detected[label_with_num]))
 
     return objects_detected
 
 def intermediate_detections(stream, predictor, multi_tracker, tracker, threshold, classes):
-    while True:
-        _,frame = stream.read()
-        predictions = predictor.predict(frame)
-
-        objects_detected = postprocess(frame, predictions, threshold, classes, predictor.framework)
-
-        #Forcing the video to play till more than one objects are detected
-        if len(objects_detected) > 1:
-            break
-
+    
+    _,frame = stream.read()
+    predictions = predictor.predict(frame)
+    objects_detected = postprocess(frame, predictions, threshold, classes, predictor.framework)
+    
     objects_list = list(objects_detected.keys())
     print('Tracking the following objects', objects_list)
 
     multi_tracker = cv.MultiTracker_create()
+
+    #ToDo: Add tracker cmd line argument
     for items in objects_detected.items():
-        ok = multi_tracker.add(cv.TrackerKCF_create(), frame, items[1])
+        ok = multi_tracker.add(cv.TrackerKCF_create(), frame, items[1][0])
         #ok = multi_tracker.add(cv.TrackerMedianFlow_create(), frame, items[1])  
         
     return stream, objects_detected, objects_list, multi_tracker 
 
 def process(args):
 
-
     objects_detected = dict()
-
 
     #ToDo: Put this in intermediate_detection
     tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
     tracker_type = tracker_types[2]
-
+    tracker = None
+    """
     if tracker_type == 'BOOSTING':
         tracker = cv.TrackerBoosting_create()
     if tracker_type == 'MIL':
@@ -132,7 +129,7 @@ def process(args):
         tracker = cv.TrackerMedianFlow_create()
     if tracker_type == 'GOTURN':
         tracker = cv.TrackerGOTURN_create()
-
+    """
     predictor = object_detector(args.model, args.config)
     multi_tracker = cv.MultiTracker_create()
     stream = cv.VideoCapture(args.input if args.input else 0)
@@ -146,6 +143,7 @@ def process(args):
     stream, objects_detected, objects_list, multi_tracker = intermediate_detections(stream, predictor, multi_tracker, tracker, args.thr, classes)    
 
     while True:
+    
         grabbed, frame = stream.read()
 
         if not grabbed:
@@ -153,42 +151,32 @@ def process(args):
 
         timer = cv.getTickCount()
 
+        #Even when multitracker fails,  bboxes will have old values
+        #But ok will be false
         ok, bboxes = multi_tracker.update(frame)
-
+    
         fps = cv.getTickFrequency() / (cv.getTickCount() - timer)
 
-        if ok:
-            for i,boxes in enumerate(bboxes): 
-                label = objects_list[i]
-                p1 = (int(boxes[0]), int(boxes[1]))
-                p2 = (int(boxes[0] + boxes[2]), int(boxes[1] + boxes[3]))
-                cv.rectangle(frame, p1, p2, (255,0,0), 2, 1)
-                #cv.putText(frame, label, p1, cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 100, 10))
-                left = p1[0]
-                top = p1[1]
-                labelSize, baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                top = max(top, labelSize[1])
-                cv.rectangle(frame, (left, top - labelSize[1]), (left + labelSize[0], top + baseLine), (255, 255, 255), cv.FILLED)
-                cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
-
+        #print(bboxes, ' - ', ok )
+        if ok and len(bboxes) > 0:
+            drawPred(frame, bboxes, objects_detected)
 
         else:
-            cv.putText(frame, 'Tracking Failure. Trying to detect more objects', (100,80), cv.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
+            cv.putText(frame, 'Tracking Failure. Trying to detect more objects', (50,80), cv.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
             stream, objects_detected, objects_list, multi_tracker = intermediate_detections(stream, predictor, multi_tracker, tracker, args.thr, classes)   
 
         # Display FPS on frame
         cv.putText(frame, "FPS : " + str(int(fps)), (100,50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
         
         #Resize
-        frame = imutils.resize(frame, width=500)
+        frame = imutils.resize(frame, width=800)
 
         # Display result
-        cv.imshow("Tracking", frame)
+        cv.imshow("Tracking in progress", frame)
  
-        
         k = cv.waitKey(1) & 0xff
 
-        #Force detect new objects
+        #Force detect new objects if 'q' is pressed
         if k == ord('q'):
             print('Refreshing. Detecting New objects')
             cv.putText(frame, 'Refreshing. Detecting New objects', (100,80), cv.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
@@ -197,6 +185,8 @@ def process(args):
         # Exit if ESC pressed    
         if k == 27 : break 
 
+    cv.destroyAllWindows()
+    stream.release()
 
 def main():
     
@@ -211,9 +201,7 @@ def main():
     parser.add_argument('--config',
                         help='Path to a text file of model contains network configuration. '
                              'It could be a file with extensions .prototxt (Caffe), .cfg (Darknet)')
-    parser.add_argument('--framework', choices=['caffe', 'darknet'],
-                        help='Optional name of an origin framework of the model. '
-                             'Detect it automatically if it does not set.')
+    
     parser.add_argument('--classes', help='Optional path to a text file with names of classes to label detected objects.')
     
     parser.add_argument('--thr', type=float, default=0.35, help='Confidence threshold')
