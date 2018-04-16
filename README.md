@@ -23,4 +23,7 @@ python3 src/main.py --model model_data/MobileNetSSD_deploy.caffemodel --config m
 ```
 
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/levZEJKcPjM" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+
 *Note: --input can be ommitted, which will activate stream from webcam. New objects are detected when current objects being tracked are lost, or when 'q' is pressed*
