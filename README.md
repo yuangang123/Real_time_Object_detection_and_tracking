@@ -23,7 +23,7 @@ python3 src/main.py --model model_data/MobileNetSSD_deploy.caffemodel --config m
 ```
 
 
-[![MobileNet_SSD with KCF tracker](https://imgur.com/a/kdXFn)](https://www.youtube.com/watch?v=levZEJKcPjM&feature=youtu.be "MobileNet_SSD with KCF tracker")
+[![MobileNet_SSD with KCF tracker](https://i.ytimg.com/vi/levZEJKcPjM/2.jpg)](https://www.youtube.com/watch?v=levZEJKcPjM&feature=youtu.be "MobileNet_SSD with KCF tracker")
 
 
 *Note: --input can be ommitted, which will activate stream from webcam. New objects are detected when current objects being tracked are lost, or when 'q' is pressed*
