@@ -23,13 +23,16 @@ python3 src/main.py --model model_data/MobileNetSSD_deploy.caffemodel --config m
 ```
 
 
+*Note: --input can be ommitted, which will activate stream from webcam. New objects are detected when current objects being tracked are lost, or when 'q' is pressed*
+
+
 ## MobileNet_SSD with KCF tracker
+==================================
 [![MobileNet_SSD with KCF tracker](https://raw.githubusercontent.com/apoorvavinod/Real_time_Object_detection_and_tracking/master/misc/MobileNet_SSD_KCF.gif)](https://www.youtube.com/watch?v=levZEJKcPjM&feature=youtu.be "MobileNet_SSD with KCF tracker")
 
 
 ## YOLOv2 with KCF tracker
+===========================
 [![YOLOv2 with KCF tracker](https://raw.githubusercontent.com/apoorvavinod/Real_time_Object_detection_and_tracking/master/misc/YOLOv2_with_KCF.gif)](https://www.youtube.com/watch?v=KmyrSarmvhg&feature=youtu.be "YOLOv2 with KCF tracker")
 
 
-
-*Note: --input can be ommitted, which will activate stream from webcam. New objects are detected when current objects being tracked are lost, or when 'q' is pressed*
