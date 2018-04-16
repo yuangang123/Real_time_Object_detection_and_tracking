@@ -133,7 +133,15 @@ def process(args):
     predictor = object_detector(args.model, args.config)
     multi_tracker = cv.MultiTracker_create()
     stream = cv.VideoCapture(args.input if args.input else 0)
-    
+
+    if args.output:
+        _, test_frame = stream.read()
+        height = test_frame.shape[0]
+        width = test_frame.shape[1]
+        fourcc = cv.VideoWriter_fourcc(*'XVID')
+        #out = cv.VideoWriter(args.output,fourcc, 20.0, (640,480))
+        out = cv.VideoWriter(args.output,fourcc, 20.0, (width,height))
+
     if args.classes:
         with open(args.classes, 'rt') as f:
             classes = f.read().rstrip('\n').split('\n')
@@ -142,7 +150,7 @@ def process(args):
 
     stream, objects_detected, objects_list, multi_tracker = intermediate_detections(stream, predictor, multi_tracker, tracker, args.thr, classes)    
 
-    while True:
+    while stream.isOpened():
     
         grabbed, frame = stream.read()
 
@@ -169,11 +177,14 @@ def process(args):
         cv.putText(frame, "FPS : " + str(int(fps)), (100,50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
         
         #Resize
-        frame = imutils.resize(frame, width=800)
+        #frame = imutils.resize(frame, width=640)
 
         # Display result
         cv.imshow("Tracking in progress", frame)
- 
+        
+        #Write to output file
+        if args.output:
+            out.write(frame)
         k = cv.waitKey(1) & 0xff
 
         #Force detect new objects if 'q' is pressed
@@ -185,14 +196,19 @@ def process(args):
         # Exit if ESC pressed    
         if k == 27 : break 
 
-    cv.destroyAllWindows()
     stream.release()
+    if args.output:
+        out.release()
+    cv.destroyAllWindows()
+
 
 def main():
     
     parser = argparse.ArgumentParser(description='Object Detection and Tracking on Video Streams')
     
     parser.add_argument('--input', help='Path to input image or video file. Skip this argument to capture frames from a camera.')
+
+    parser.add_argument('--output', help='Path to input image or video file. Skip this argument to capture frames from a camera.')
 
     parser.add_argument('--model', required=True,
                         help='Path to a binary file of model contains trained weights. '
