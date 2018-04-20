@@ -133,6 +133,10 @@ def process(args):
     predictor = object_detector(args.model, args.config)
     multi_tracker = cv.MultiTracker_create()
     stream = cv.VideoCapture(args.input if args.input else 0)
+    window_name = "Tracking in progress"
+    cv.namedWindow(window_name, cv.WINDOW_NORMAL)
+    cv.setWindowProperty(window_name, cv.WND_PROP_AUTOSIZE, cv.WINDOW_AUTOSIZE)        
+    cv.moveWindow(window_name,10,10)
 
     if args.output:
         _, test_frame = stream.read()
@@ -176,11 +180,13 @@ def process(args):
         # Display FPS on frame
         cv.putText(frame, "FPS : " + str(int(fps)), (100,50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
         
-        #Resize
-        #frame = imutils.resize(frame, width=640)
-
+        
         # Display result
-        cv.imshow("Tracking in progress", frame)
+        #If resolution is too big, resize the video
+        if frame.shape[1] > 1240:
+            cv.imshow(window_name, imutils.resize(frame, width=1240))
+        else:
+            cv.imshow(window_name, frame)
         
         #Write to output file
         if args.output:
@@ -208,7 +214,7 @@ def main():
     
     parser.add_argument('--input', help='Path to input image or video file. Skip this argument to capture frames from a camera.')
 
-    parser.add_argument('--output', help='Path to input image or video file. Skip this argument to capture frames from a camera.')
+    parser.add_argument('--output', help='Path to save output as video file. If nothing is given, the output will not be saved.')
 
     parser.add_argument('--model', required=True,
                         help='Path to a binary file of model contains trained weights. '
@@ -220,7 +226,7 @@ def main():
     
     parser.add_argument('--classes', help='Optional path to a text file with names of classes to label detected objects.')
     
-    parser.add_argument('--thr', type=float, default=0.35, help='Confidence threshold')
+    parser.add_argument('--thr', type=float, default=0.35, help='Confidence threshold for detection')
     
     args = parser.parse_args()
 
