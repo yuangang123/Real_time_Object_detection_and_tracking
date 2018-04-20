@@ -6,7 +6,7 @@
 
 ## Pre-req:
 
-1. OpenCV2
+1. OpenCV 3.4
 2. imutils
 
 
