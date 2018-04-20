@@ -1,4 +1,4 @@
-# Real-time Object Tracking and detection for Video-Streams
+# Real-time Object Tracking and Detection for Video-streams
 
 
 *Implementation under progress*
