@@ -4,11 +4,10 @@
 *Implementation under progress*
 
 
-##Pre-req:
-```
+## Pre-req:
+
 1. OpenCV2
 2. imutils
-```
 
 
 *Download weights here and place them in model_data/*
@@ -16,7 +15,7 @@
 - [MobileNetSSD_deploy.caffemodel](https://www.dropbox.com/s/d7pxo7kw67zb0e1/MobileNetSSD_deploy.caffemodel?dl=0)
 
 
-##Arguments:
+## Arguments:
 ```
 $python3 src/main.py -h
 usage: main.py [-h] [--input INPUT] [--output OUTPUT] --model MODEL
