@@ -8,6 +8,7 @@ import argparse
 import sys
 import numpy as np
 import time
+from copy import deepcopy
 import imutils
 from object_detection import object_detector
 
@@ -92,20 +93,23 @@ def postprocess(frame, out, threshold, classes, framework):
 
 def intermediate_detections(stream, predictor, multi_tracker, tracker, threshold, classes):
     
+    
     _,frame = stream.read()
     predictions = predictor.predict(frame)
     objects_detected = postprocess(frame, predictions, threshold, classes, predictor.framework)
-    
+        
     objects_list = list(objects_detected.keys())
     print('Tracking the following objects', objects_list)
 
     multi_tracker = cv.MultiTracker_create()
 
-    #ToDo: Add tracker cmd line argument
-    for items in objects_detected.items():
-        ok = multi_tracker.add(cv.TrackerKCF_create(), frame, items[1][0])
-        #ok = multi_tracker.add(cv.TrackerMedianFlow_create(), frame, items[1])  
-        
+    if len(objects_list) > 0:
+    
+        #ToDo: Add tracker cmd line argument
+        for items in objects_detected.items():
+            ok = multi_tracker.add(cv.TrackerKCF_create(), frame, items[1][0])
+            #ok = multi_tracker.add(cv.TrackerMedianFlow_create(), frame, items[1])  
+            
     return stream, objects_detected, objects_list, multi_tracker 
 
 def process(args):
@@ -137,6 +141,7 @@ def process(args):
     cv.namedWindow(window_name, cv.WINDOW_NORMAL)
     cv.setWindowProperty(window_name, cv.WND_PROP_AUTOSIZE, cv.WINDOW_AUTOSIZE)        
     cv.moveWindow(window_name,10,10)
+    
 
     if args.output:
         _, test_frame = stream.read()
@@ -145,6 +150,7 @@ def process(args):
         fourcc = cv.VideoWriter_fourcc(*'XVID')
         #out = cv.VideoWriter(args.output,fourcc, 20.0, (640,480))
         out = cv.VideoWriter(args.output,fourcc, 20.0, (width,height))
+        failTolerance = 0
 
     if args.classes:
         with open(args.classes, 'rt') as f:
@@ -165,26 +171,34 @@ def process(args):
 
         #Even when multitracker fails,  bboxes will have old values
         #But ok will be false
-        ok, bboxes = multi_tracker.update(frame)
-    
+        if len(objects_list) > 0:
+            ok, bboxes = multi_tracker.update(frame)
+        #bboxes = multi_tracker.getObjects()
+        #ok = multi_tracker.empty()
+
+        
         fps = cv.getTickFrequency() / (cv.getTickCount() - timer)
 
-        #print(bboxes, ' - ', ok )
-        if ok and len(bboxes) > 0:
+        
+        print(bboxes, ' --- ', ok )
+        #if ok and len(bboxes) > 0:
+        #if ok and len(bboxes) > 0: 
+        
+        if ok and len(bboxes) > 0 : 
             drawPred(frame, bboxes, objects_detected)
+            # Display FPS on frame
+            cv.putText(frame, "FPS : " + str(int(fps)), (100,50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
 
         else:
             cv.putText(frame, 'Tracking Failure. Trying to detect more objects', (50,80), cv.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
             stream, objects_detected, objects_list, multi_tracker = intermediate_detections(stream, predictor, multi_tracker, tracker, args.thr, classes)   
+            
+        
 
-        # Display FPS on frame
-        cv.putText(frame, "FPS : " + str(int(fps)), (100,50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
-        
-        
         # Display result
         #If resolution is too big, resize the video
         if frame.shape[1] > 1240:
-            cv.imshow(window_name, imutils.resize(frame, width=1240))
+            cv.imshow(window_name, cv.resize(frame, (1240, 960)))
         else:
             cv.imshow(window_name, frame)
         
@@ -220,6 +234,7 @@ def main():
                         help='Path to a binary file of model contains trained weights. '
                              'It could be a file with extensions .caffemodel (Caffe), '
                              '.weights (Darknet)')
+    
     parser.add_argument('--config',
                         help='Path to a text file of model contains network configuration. '
                              'It could be a file with extensions .prototxt (Caffe), .cfg (Darknet)')
