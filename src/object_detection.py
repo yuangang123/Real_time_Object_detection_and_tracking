@@ -2,6 +2,21 @@ import cv2 as cv
 import sys
 import numpy as np
 
+def imcv2_recolor(im, a=.1):
+    # t = [np.random.uniform()]
+    # t += [np.random.uniform()]
+    # t += [np.random.uniform()]
+    # t = np.array(t) * 2. - 1.
+    t = np.random.uniform(-1, 1, 3)
+
+    # random amplify each channel
+    im = im.astype(np.float)
+    im *= (1 + t * a)
+    mx = 255. * (1 + a)
+    up = np.random.uniform(-1, 1)
+    im = np.power(im / mx, 1. + up * .5)
+    # return np.array(im * 255., np.uint8)
+    return im
 
 class object_detector:
 
@@ -29,7 +44,9 @@ class object_detector:
 
         # Create a 4D blob from a frame.
         if self.framework == 'Darknet':
-            blob = cv.dnn.blobFromImage(frame, 0.007843, (416, 416), 127.5, crop = False)
+            #blob = cv.dnn.blobFromImage(frame, 0.007843, (416, 416), 127.5, crop = False)
+            blob = cv.dnn.blobFromImage(cv.resize(frame, (416, 416)), 0.003921, (416, 416), (0,0,0), swapRB=True,  crop=False)
+
         else:
             blob = cv.dnn.blobFromImage(cv.resize(frame, (300, 300)),0.007843, (300, 300), 127.5)
 
